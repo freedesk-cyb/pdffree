@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>PDF Free — Editor 100% local</title>
+<link rel="stylesheet" href="app.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232f81f7'/%3E%3Ctext x='32' y='45' font-size='38' font-family='sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <span class="logo">P</span>
+    <div>
+      <h1>PDF Free</h1>
+      <p class="sub">Editor de PDF en el navegador &middot; <b>tus archivos nunca salen de este dispositivo</b></p>
+    </div>
+  </div>
+  <div class="privacy" id="netBadge" title="Todas las librerías están en /vendor. Ninguna petición a Internet.">
+    <span class="dot"></span> 100% offline
+  </div>
+</header>
+
+<section class="dropzone" id="dropzone">
+  <input type="file" id="fileInput" accept="application/pdf,.pdf" hidden>
+  <div class="dz-inner">
+    <div class="dz-icon">&#128196;</div>
+    <p><b>Arrastra tu PDF aqu&iacute;</b> o haz clic para elegirlo</p>
+    <p class="muted small">Tambi&eacute;n puedes abrir un PDF protegido con contraseña al cargarlo.</p>
+  </div>
+</section>
+
+<div class="pw-wrap hidden" id="pwWrap">
+  <label>Este PDF est&aacute; cifrado. Introduce la contraseña:
+    <input type="password" id="docPassword" placeholder="contraseña">
+  </label>
+  <button class="btn" id="pwOpen">Abrir</button>
+  <span class="err" id="pwErr"></span>
+</div>
+
+<main class="hidden" id="workspace">
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="edit">Editar</button>
+    <button class="tab" data-tab="ocr">OCR</button>
+    <button class="tab" data-tab="pages">Páginas</button>
+    <button class="tab" data-tab="forms">Formularios</button>
+    <button class="tab" data-tab="sign">Firmar</button>
+    <button class="tab" data-tab="convert">Convertir</button>
+    <button class="tab" data-tab="protect">Comprimir / Clave</button>
+    <button class="tab" data-tab="annotate">Anotar</button>
+  </nav>
+
+  <div class="body">
+
+    <!-- ============ EDITAR ============ -->
+    <section class="panel active" id="panel-edit">
+      <div class="toolbar">
+        <div class="group">
+          <span class="lbl">Herramienta</span>
+          <button class="btn tool active" data-tool="select">Seleccionar</button>
+          <button class="btn tool" data-tool="text">Texto</button>
+          <button class="btn tool" data-tool="image">Imagen</button>
+          <button class="btn tool" data-tool="cover">Tapar</button>
+          <button class="btn tool" data-tool="whiteout">Borrar (blanco)</button>
+          <button class="btn tool" data-tool="redact">Censurar</button>
+        </div>
+        <div class="group">
+          <span class="lbl">Fuente</span>
+          <select id="fFont"></select>
+          <select id="fSize">
+            <option>8</option><option>9</option><option>10</option><option>11</option>
+            <option selected>12</option><option>14</option><option>16</option>
+            <option>18</option><option>20</option><option>24</option><option>28</option>
+            <option>36</option><option>48</option><option>72</option>
+          </select>
+          <input type="color" id="fColor" value="#000000" title="Color del texto">
+          <button class="btn" id="bBold" title="Negrita"><b>N</b></button>
+          <button class="btn" id="bItalic" title="Cursiva"><i>C</i></button>
+        </div>
+        <div class="group">
+          <span class="lbl">Alineación</span>
+          <button class="btn" data-align="left" title="Izquierda">&#8676;</button>
+          <button class="btn" data-align="center" title="Centrar">&#8596;</button>
+          <button class="btn" data-align="right" title="Derecha">&#8677;</button>
+          <button class="btn" data-align="justify" title="Justificar">&#8801;</button>
+        </div>
+        <div class="group">
+          <button class="btn danger" id="delSel">Eliminar selección</button>
+          <button class="btn" id="undoBtn" title="Deshacer (Ctrl+Z)">&#8630;</button>
+          <button class="btn" id="clearAll">Limpiar cambios</button>
+        </div>
+      </div>
+      <p class="hint">
+        <b>Cómo editar el texto de un PDF:</b> marca <b>Mostrar cajas de texto detectados</b> y haz clic sobre la
+        línea que quieras corregir. El motor reescribe esa línea <b>dentro del propio PDF</b>, conservando la fuente
+        incrustada original: condensada, negrita, cursiva, tamaño y posición se mantienen intactos.
+        Con <b>Tapar</b> cubres una zona concreta, y con <b>Texto</b> añades texto nuevo donde quieras.
+        El texto original <b>desaparece del archivo</b>: no queda debajo, es una modificación real.
+      </p>
+      <div class="toolbar sub">
+        <label class="chk"><input type="checkbox" id="showTextBoxes"> Mostrar cajas de texto detectados (clic para editar)</label>
+        <input type="color" id="coverColor" value="#ffffff" title="Color de tapado">
+        <span class="muted small" id="coverLbl">color de tapado</span>
+      </div>
+
+      <!-- Cambios aplicados, en orden de documento -->
+      <div id="panelCambios" class="cambios hidden">
+        <div class="cambios-cab">
+          <b>Cambios en el documento</b>
+          <span class="muted small" id="cambiosInfo"></span>
+          <button class="btn sm" id="cerrarCambios" title="Ocultar la lista">&times;</button>
+        </div>
+        <ol class="cambios-lista" id="cambiosLista"></ol>
+      </div>
+
+      <div class="pages" id="pages-edit"></div>
+    </section>
+
+    <!-- ============ OCR ============ -->
+    <section class="panel" id="panel-ocr">
+      <div class="toolbar">
+        <div class="group">
+          <span class="lbl">Idioma OCR</span>
+          <select id="ocrLang">
+            <option value="spa" selected>Español</option>
+            <option value="eng">Inglés</option>
+            <option value="spa+eng">Español + Inglés</option>
+          </select>
+        </div>
+        <div class="group">
+          <button class="btn primary" id="ocrRun">Ejecutar OCR (buscable + editable)</button>
+          <span class="progress hidden" id="ocrProg"><span></span></span>
+        </div>
+        <div class="group">
+          <button class="btn" id="ocrTextView">Ver texto reconocido</button>
+          <button class="btn" id="ocrTextFile">Descargar .txt</button>
+        </div>
+      </div>
+      <p class="hint">
+        Convierte cada página en imagen, la pasa por Tesseract y reconstruye una capa de texto invisible
+        (modo <i>render invisible</i>): el PDF queda <b>buscable, seleccionable y copiable</b> sin tocar el diseño.
+        Luego ve a <b>Editar</b> y marca cualquier frase para corregirla.
+      </p>
+      <div class="pages" id="pages-ocr"></div>
+    </section>
+
+    <!-- ============ PAGINAS ============ -->
+    <section class="panel" id="panel-pages">
+      <div class="toolbar">
+        <div class="group">
+          <span class="lbl">Acciones</span>
+          <button class="btn" id="pgRotL">Girar &#8630; izquierda</button>
+          <button class="btn" id="pgRotR">Girar &#8631; derecha</button>
+          <button class="btn" id="pgDel">Eliminar</button>
+          <button class="btn" id="pgDup">Duplicar</button>
+        </div>
+        <div class="group">
+          <button class="btn" id="pgMerge">Unir con otro PDF…</button>
+          <input type="file" id="mergeInput" accept="application/pdf" hidden>
+        </div>
+        <div class="group">
+          <span class="lbl">Rango</span>
+          <input type="text" id="rangeText" placeholder="p. ej. 1-3,7,10-12" size="18">
+          <button class="btn primary" id="pgExtract">Extraer a PDF nuevo</button>
+          <button class="btn" id="pgSplitEvery">Dividir cada N pág.</button>
+          <input type="number" id="splitEvery" value="1" min="1" style="width:64px">
+        </div>
+        <div class="group">
+          <button class="btn" id="pgGrid">Ver miniaturas para arrastrar</button>
+        </div>
+      </div>
+      <p class="hint">Selecciona páginas con <b>clic</b>, <b>Mayúsculas</b> para rango, <b>Ctrl/Shift</b> para añadir.
+        En la vista de miniaturas puedes reordenar arrastrando.</p>
+      <div class="grid hidden" id="pageGrid"></div>
+      <div class="pages hidden" id="pages-pages"></div>
+    </section>
+
+    <!-- ============ FORMULARIOS ============ -->
+    <section class="panel" id="panel-forms">
+      <div class="toolbar">
+        <div class="group">
+          <span class="lbl">Crear campo</span>
+          <button class="btn tool active" data-ffield="text">Texto</button>
+          <button class="btn tool" data-ffield="checkbox">Casilla</button>
+          <button class="btn tool" data-ffield="dropdown">Desplegable</button>
+          <button class="btn tool" data-ffield="radio">Radio</button>
+        </div>
+        <div class="group" id="ffDropOpts">
+          <span class="lbl">Opciones (separadas por |)</span>
+          <input type="text" id="ffOptions" placeholder="Opción A|Opción B|Opción C" size="26">
+        </div>
+        <div class="group">
+          <button class="btn primary" id="ffCreate">Insertar campo en la página</button>
+          <button class="btn" id="ffModeFill">Rellenar formulario</button>
+          <button class="btn danger" id="ffRemove">Borrar campo</button>
+        </div>
+      </div>
+      <p class="hint">Los campos son <b>AcroForm reales</b>: se rellenan en Acrobat, Chrome, Edge, móvil y en el botón
+        <i>Rellenar formulario</i> de esta web. Funcionan aunque el archivo se envíe a otra persona.</p>
+      <div class="pages" id="pages-forms"></div>
+    </section>
+
+    <!-- ============ FIRMAR ============ -->
+    <section class="panel" id="panel-sign">
+      <div class="toolbar">
+        <div class="group">
+          <button class="btn primary" id="sigDraw">Crear firma manuscrita</button>
+          <button class="btn" id="sigType">Firma de texto</button>
+          <button class="btn" id="sigImg">Subir imagen de firma</button>
+        </div>
+        <div class="group">
+          <input type="text" id="sigName" placeholder="Nombre para firma de texto" size="18">
+          <input type="color" id="sigColor" value="#0b3d91">
+        </div>
+      </div>
+      <p class="hint">Dibuja con el ratón o el dedo, o escribe tu nombre en estilo cursivo. Se inserta como imagen
+        vectorial nítida a cualquier zoom. Para firma <b>criptográfica</b> (certificado) usa la versión de escritorio.</p>
+      <canvas id="sigPad" class="hidden sigpad"></canvas>
+      <div class="sig-actions hidden" id="sigActions">
+        <button class="btn" id="sigClear">Limpiar</button>
+        <button class="btn primary" id="sigApply">Insertar en la página</button>
+      </div>
+      <div class="pages" id="pages-sign"></div>
+    </section>
+
+    <!-- ============ CONVERTIR ============ -->
+    <section class="panel" id="panel-convert">
+      <div class="toolbar">
+        <div class="group">
+          <span class="lbl">PDF hacia</span>
+          <button class="btn primary" id="toWord">Word (.docx)</button>
+          <button class="btn" id="toExcel">Excel (.xlsx)</button>
+          <button class="btn" id="toTxt">Texto (.txt)</button>
+          <button class="btn" id="toHtml">HTML</button>
+          <button class="btn" id="toImages">Imágenes PNG</button>
+        </div>
+        <div class="group">
+          <span class="lbl">Hacia PDF</span>
+          <button class="btn" id="fromWord">Word/ODT → PDF</button>
+          <button class="btn" id="fromExcel">Excel/CSV → PDF</button>
+          <input type="file" id="docxInput" accept=".docx,.odt,.rtf,.doc" hidden>
+          <input type="file" id="sheetInput" accept=".xlsx,.xls,.csv" hidden>
+        </div>
+        <div class="group">
+          <label class="chk">Detectar tablas
+            <input type="checkbox" id="convTables" checked>
+          </label>
+          <button class="btn" id="zipInput">Unir varios PDFs…</button>
+          <input type="file" id="zipInputEl" accept="application/pdf" multiple hidden>
+        </div>
+      </div>
+      <p class="hint">La extracción se hace con el motor de texto de PDF.js: conserva <b>lectura</b> y, si es posible,
+        detecta tablas por posición de palabras. La maquetación complexa (columnas, gráficos) se pierde: es la
+        limitación real del navegador frente a un motor de oficina.</p>
+      <div class="out" id="convOut"></div>
+    </section>
+
+    <!-- ============ COMPRIMIR / PROTEGER ============ -->
+    <section class="panel" id="panel-protect">
+      <div class="toolbar">
+        <div class="group">
+          <span class="lbl">Comprimir im&aacute;genes</span>
+          <select id="imgQuality">
+            <option value="0.92">Alta (92%)</option>
+            <option value="0.75" selected>Media (75%)</option>
+            <option value="0.55">Baja (55%)</option>
+            <option value="0.35">M&iacute;nima (35%)</option>
+          </select>
+          <select id="imgMaxPx">
+            <option value="0">Sin cambiar resoluci&oacute;n</option>
+            <option value="1600" selected>M&aacute;x. 1600 px</option>
+            <option value="1200">M&aacute;x. 1200 px</option>
+            <option value="800">M&aacute;x. 800 px</option>
+          </select>
+          <button class="btn primary" id="compressRun">Comprimir</button>
+          <span class="progress hidden" id="cmpProg"><span></span></span>
+        </div>
+      </div>
+      <div class="toolbar">
+        <div class="group">
+          <span class="lbl">Protecci&oacute;n</span>
+          <input type="password" id="encPw" placeholder="contraseña nueva">
+          <button class="btn primary" id="encRun">Poner contraseña</button>
+          <button class="btn" id="decRun">Quitar contraseña</button>
+        </div>
+        <div class="group">
+          <span class="lbl">Permisos</span>
+          <label class="chk"><input type="checkbox" id="permPrint" checked> Imprimir</label>
+          <label class="chk"><input type="checkbox" id="permCopy" checked> Copiar</label>
+          <label class="chk"><input type="checkbox" id="permModify" checked> Modificar</label>
+        </div>
+        <div class="group">
+          <button class="btn" id="metaClean">Quitar metadatos</button>
+          <button class="btn" id="metaShow">Ver metadatos</button>
+        </div>
+      </div>
+      <p class="hint">El cifrado usa <b>AES-256</b> y se genera con una implementaci&oacute;n propia de PDF-lib
+        (<i>cantoo</i>), ejecutada &iacute;ntegramente en tu navegador. El resultado se abre en cualquier lector est&aacute;ndar.</p>
+      <div class="out" id="protOut"></div>
+    </section>
+
+    <!-- ============ ANOTAR ============ -->
+    <section class="panel" id="panel-annotate">
+      <div class="toolbar">
+        <div class="group">
+          <span class="lbl">Anotaci&oacute;n</span>
+          <button class="btn tool active" data-atool="none">Solo lectura</button>
+          <button class="btn tool" data-atool="highlight">Resaltar</button>
+          <button class="btn tool" data-atool="strike">Tachar</button>
+          <button class="btn tool" data-atool="underline">Subrayar</button>
+          <button class="btn tool" data-atool="freehand">Dibujar</button>
+          <button class="btn tool" data-atool="note">Comentario</button>
+        </div>
+        <div class="group">
+          <input type="color" id="aColor" value="#ffe14d">
+          <input type="number" id="aWidth" value="3" min="1" max="30" style="width:70px">
+          <button class="btn" id="aClear">Quitar anotaciones de esta p&aacute;gina</button>
+        </div>
+      </div>
+      <p class="hint">Las anotaciones se guardan dentro del PDF como objetos reales (compatibles con Acrobat y
+        los visores de Chrome/Edge), as&iacute; que se ven y discuten en el mismo archivo.</p>
+      <div class="pages" id="pages-annotate"></div>
+    </section>
+
+  </div>
+
+  <footer class="statusbar">
+    <span id="docName">documento.pdf</span>
+    <span id="docMeta">—</span>
+    <span class="grow"></span>
+    <span id="status">Listo</span>
+    <button class="btn primary" id="saveBtn">Guardar PDF</button>
+  </footer>
+</main>
+
+<div class="toast hidden" id="toast"></div>
+
+<!-- Overlay para colocar campos -->
+<div class="placement hidden" id="placement">
+  <div class="placement-box">
+    <p id="placementMsg">Arrastra sobre la p&aacute;gina para colocar el elemento &middot; <b>Esc</b> para cancelar</p>
+    <div id="placementStage"></div>
+    <button class="btn" id="placementCancel">Cancelar</button>
+  </div>
+</div>
+
+<script src="vendor/cantoo-pdf-lib.min.js"></script>
+<script src="vendor/fontkit.umd.min.js"></script>
+<script src="vendor/docx.umd.cjs"></script>
+<script src="vendor/mammoth.browser.min.js"></script>
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/tesseract/tesseract.min.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

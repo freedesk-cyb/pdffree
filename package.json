@@ -1,0 +1,40 @@
+{
+  "name": "pdf-free-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Editor de PDF 100% en el navegador. Sin cuentas, sin servidor, sin subir archivos.",
+  "scripts": {
+    "start": "node serve.mjs 8080",
+    "dev": "node serve.mjs 8080",
+    "test": "node test/pipeline.test.mjs",
+    "test:type": "node test/typography.test.mjs",
+    "test:browser": "node test/browser.test.mjs",
+    "test:ocr": "node test/ocr.test.mjs",
+    "test:all": "node test/pipeline.test.mjs && node test/typography.test.mjs && node test/inplace.test.mjs && node test/inline.test.mjs && node test/same-line.test.mjs && node test/live.test.mjs && node test/ancho.test.mjs && node test/sustitucion.test.mjs && node test/duplicados.test.mjs && node test/cv-real.test.mjs && node test/kerning.test.mjs && node test/report.test.mjs && node test/browser.test.mjs && node test/ocr.test.mjs",
+    "shots": "node test/screenshot.mjs",
+    "visual": "node test/visual.mjs",
+    "test:inline": "node test/inline.test.mjs",
+    "fixture": "node test/make-fixture.mjs",
+    "test:same-line": "node test/same-line.test.mjs",
+    "fixture:cv": "node test/make-cv-fixture.mjs",
+    "test:live": "node test/live.test.mjs",
+    "test:report": "node test/report.test.mjs",
+    "test:ancho": "node test/ancho.test.mjs",
+    "test:sustitucion": "node test/sustitucion.test.mjs",
+    "test:duplicados": "node test/duplicados.test.mjs",
+    "fixture:cv-real": "node test/make-cv-real-fixture.mjs",
+    "fixture:cv-kerning": "node test/make-cv-kerning-fixture.mjs",
+    "test:cv-real": "node test/cv-real.test.mjs",
+    "test:kerning": "node test/kerning.test.mjs"
+  },
+  "keywords": [
+    "pdf",
+    "editor",
+    "ocr",
+    "offline",
+    "privacidad",
+    "sin-servidor"
+  ],
+  "license": "MIT"
+}

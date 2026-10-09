@@ -1,0 +1,21 @@
+/*
+  Cabeceras de seguridad y de aislamiento.
+  Cloudflare Pages y Netlify leen este fichero automáticamente.
+  Los problemas de caché de /vendor se resuelven con el hash del nombre,
+  pero declaramos Cache-Control explícito para evitar re-descargas de 37 MB.
+*/
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  X-Frame-Options: DENY
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'
+
+/vendor/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/test/*
+  Cache-Control: no-store
+
+/*
